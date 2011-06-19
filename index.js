@@ -17,8 +17,6 @@
         console.error("'" + (flatStringify(thing)) + "' (type '" + (thing != null ? (_ref2 = thing.constructor) != null ? _ref2.name : void 0 : void 0) + "') is still alive!");
         printRefTree(makeMirror(thing));
         throw "unfullfilled vanish assertion";
-      } else {
-        return console.error("vanished as expected");
       }
     }, timeout);
   };

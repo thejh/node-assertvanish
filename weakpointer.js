@@ -1,15 +1,14 @@
 (function() {
   var EphemeronTable, WeakPointer;
   EphemeronTable = require('overload').EphemeronTable;
-  WeakPointer = (function() {
+  module.exports = WeakPointer = (function() {
     function WeakPointer(target) {
-      var eph_table;
-      eph_table = new EphemeronTable();
-      eph_table.set(target, null);
+      this.eph_table = new EphemeronTable();
+      this.eph_table.set(target, null);
     }
     WeakPointer.prototype.get = function() {
       var keys;
-      keys = eph_table.keys();
+      keys = this.eph_table.keys();
       if (keys.length > 0) {
         return keys[0];
       }
@@ -18,7 +17,7 @@
   })();
   ({
     isAlive: function() {
-      return eph_table.keys().length > 0;
+      return this.eph_table.keys().length > 0;
     }
   });
 }).call(this);

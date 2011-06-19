@@ -16,8 +16,6 @@ weakAssertVanish = (weakPointer, timeout) ->
       console.error "'#{flatStringify thing}' (type '#{thing?.constructor?.name}') is still alive!"
       printRefTree makeMirror thing
       throw "unfullfilled vanish assertion"
-    else
-      console.error "vanished as expected"
   , timeout
 
 makeIndent = (level) ->
