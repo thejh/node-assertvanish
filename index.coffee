@@ -47,10 +47,15 @@ flatStringify = (thing, referencee) ->
     type = thing.constructor?.name or 'object'
     "#{type}#{if thing.name then " '#{thing.name}'" else ''} (#{flatjson})"
 
-printRefTree = (mirror, indentLevel = 0, referencee) ->
+printRefTree = (mirror, indentLevel = 0, referencee, seenTree = []) ->
+  for seen in seenTree when seen is mirror
+    console.error "#{makeIndent indentLevel}cyclic"
+    return
   console.error "#{makeIndent indentLevel}#{flatStringify mirror.value_, referencee}"
+  seenTree.push mirror
   for referencer in mirror.referencedBy()
-    printRefTree referencer, indentLevel + 1, mirror.value_
+    printRefTree referencer, indentLevel + 1, mirror.value_, seenTree
+  seenTree.pop()
 
 module.exports = assertVanish
 module.exports.active = true

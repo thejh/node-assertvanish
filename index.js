@@ -63,19 +63,29 @@
       return "" + type + (thing.name ? " '" + thing.name + "'" : '') + " (" + flatjson + ")";
     }
   };
-  printRefTree = function(mirror, indentLevel, referencee) {
-    var referencer, _i, _len, _ref2, _results;
+  printRefTree = function(mirror, indentLevel, referencee, seenTree) {
+    var referencer, seen, _i, _j, _len, _len2, _ref2;
     if (indentLevel == null) {
       indentLevel = 0;
     }
-    console.error("" + (makeIndent(indentLevel)) + (flatStringify(mirror.value_, referencee)));
-    _ref2 = mirror.referencedBy();
-    _results = [];
-    for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-      referencer = _ref2[_i];
-      _results.push(printRefTree(referencer, indentLevel + 1, mirror.value_));
+    if (seenTree == null) {
+      seenTree = [];
     }
-    return _results;
+    for (_i = 0, _len = seenTree.length; _i < _len; _i++) {
+      seen = seenTree[_i];
+      if (seen === mirror) {
+        console.error("" + (makeIndent(indentLevel)) + "cyclic");
+        return;
+      }
+    }
+    console.error("" + (makeIndent(indentLevel)) + (flatStringify(mirror.value_, referencee)));
+    seenTree.push(mirror);
+    _ref2 = mirror.referencedBy();
+    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+      referencer = _ref2[_j];
+      printRefTree(referencer, indentLevel + 1, mirror.value_, seenTree);
+    }
+    return seenTree.pop();
   };
   module.exports = assertVanish;
   module.exports.active = true;
