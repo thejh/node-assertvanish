@@ -1,0 +1,23 @@
+{ "name": "assertvanish"
+, "version": "0.0.1-1"
+, "description": "assert that an object will vanish"
+, "keywords":
+  [ "assert"
+  , "debug"
+  , "vanish"
+  ]
+, "homepage": "http://github.com/thejh/node-assertvanish"
+, "author": "Jann Horn"
+, "main": "index.js"
+, "repository":
+  { "type": "git"
+  , "url": "http://github.com/thejh/node-assertvanish.git"
+  }
+, "dependencies":
+  { "overload": "*"
+  }
+, "files":
+  [ "package.json"
+  , "index.js"
+  ]
+}
