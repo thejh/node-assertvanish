@@ -2,7 +2,7 @@ How to use it
 =============
 For a code example, see test.js and test.coffee.
 
-To activate vanish assertions, you have call node with `--expose-debug-as=debug`.
+To activate vanish assertions, you have to call node with `--expose-debug-as=debug`.
 
     node --expose-debug-as=debug test.js
 
