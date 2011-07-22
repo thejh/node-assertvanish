@@ -7,15 +7,19 @@ unless debug?.Debug?
 
 {MakeMirror: makeMirror, sourcePosition, findScript} = debug.Debug
 
-assertVanish = (thing, timeout) ->
-  weakAssertVanish new WeakPointer(thing), timeout
+assertVanish = (thing, timeout, options = {}) ->
+  weakAssertVanish new WeakPointer(thing), timeout, options
 
-weakAssertVanish = (weakPointer, timeout) ->
+weakAssertVanish = (weakPointer, timeout, options) ->
   setTimeout ->
     if thing = weakPointer.get()
-      console.error "'#{flatStringify thing}' (type '#{thing?.constructor?.name}') is still alive!"
-      printRefTree makeMirror thing
-      throw "unfullfilled vanish assertion"
+      unless options.silent
+        console.error "'#{flatStringify thing}' (type '#{thing?.constructor?.name}') is still alive!"
+        printRefTree makeMirror thing
+        throw "unfullfilled vanish assertion"
+      options.callback? true, thing
+    else
+      options.callback? false, null
   , timeout
 
 makeIndent = (level) ->
@@ -43,18 +47,28 @@ flatStringify = (thing, referencee) ->
     location = "#{script.name}:#{1 + script.lineFromPosition position}"
     "Function #{if thing.name then "'#{thing.name}'" else 'without a name'} from #{location}"
   else
-    flatjson = '{' + ("'#{key}': #{simpleStringify value, referencee}" for key, value of thing).join(', ') + '}'
+    flatjson = '{' + (for key of thing
+      continue if thing.__lookupGetter__(key)?
+      "'#{key}': #{simpleStringify thing[key], referencee}"
+    ).join(', ') + '}'
     type = thing.constructor?.name or 'object'
     "#{type}#{if thing.name then " '#{thing.name}'" else ''} (#{flatjson})"
 
-printRefTree = (mirror, indentLevel = 0, referencee, seenTree = []) ->
-  for seen in seenTree when seen is mirror
+printRefTree = (mirror, indentLevel = 0, referencee, seenTree = [], seen = {}) ->
+  referencers = mirror.referencedBy()
+  if referencers.length is 0
+    console.error "#{makeIndent indentLevel}NATIVE CAUSE: #{flatStringify mirror.value_, referencee}"
+  for seenThing in seenTree when seenThing is mirror
     console.error "#{makeIndent indentLevel}cyclic"
     return
+  if seen[mirror.handle_]
+    console.error "#{makeIndent indentLevel}already seen"
+    return
+  seen[mirror.handle_] = true
   console.error "#{makeIndent indentLevel}#{flatStringify mirror.value_, referencee}"
   seenTree.push mirror
-  for referencer in mirror.referencedBy()
-    printRefTree referencer, indentLevel + 1, mirror.value_, seenTree
+  for referencer in referencers
+    printRefTree referencer, indentLevel + 1, mirror.value_, seenTree, seen
   seenTree.pop()
 
 module.exports = assertVanish

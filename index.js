@@ -7,16 +7,24 @@
     return;
   }
   _ref = debug.Debug, makeMirror = _ref.MakeMirror, sourcePosition = _ref.sourcePosition, findScript = _ref.findScript;
-  assertVanish = function(thing, timeout) {
-    return weakAssertVanish(new WeakPointer(thing), timeout);
+  assertVanish = function(thing, timeout, options) {
+    if (options == null) {
+      options = {};
+    }
+    return weakAssertVanish(new WeakPointer(thing), timeout, options);
   };
-  weakAssertVanish = function(weakPointer, timeout) {
+  weakAssertVanish = function(weakPointer, timeout, options) {
     return setTimeout(function() {
       var thing, _ref2;
       if (thing = weakPointer.get()) {
-        console.error("'" + (flatStringify(thing)) + "' (type '" + (thing != null ? (_ref2 = thing.constructor) != null ? _ref2.name : void 0 : void 0) + "') is still alive!");
-        printRefTree(makeMirror(thing));
-        throw "unfullfilled vanish assertion";
+        if (!options.silent) {
+          console.error("'" + (flatStringify(thing)) + "' (type '" + (thing != null ? (_ref2 = thing.constructor) != null ? _ref2.name : void 0 : void 0) + "') is still alive!");
+          printRefTree(makeMirror(thing));
+          throw "unfullfilled vanish assertion";
+        }
+        return typeof options.callback === "function" ? options.callback(true, thing) : void 0;
+      } else {
+        return typeof options.callback === "function" ? options.callback(false, null) : void 0;
       }
     }, timeout);
   };
@@ -43,7 +51,7 @@
     }
   };
   flatStringify = function(thing, referencee) {
-    var flatjson, key, location, position, script, type, value, _ref2;
+    var flatjson, key, location, position, script, type, _ref2;
     if (typeof thing === 'function') {
       script = findScript(thing);
       position = sourcePosition(thing);
@@ -54,8 +62,10 @@
         var _results;
         _results = [];
         for (key in thing) {
-          value = thing[key];
-          _results.push("'" + key + "': " + (simpleStringify(value, referencee)));
+          if (thing.__lookupGetter__(key) != null) {
+            continue;
+          }
+          _results.push("'" + key + "': " + (simpleStringify(thing[key], referencee)));
         }
         return _results;
       })()).join(', ') + '}';
@@ -63,27 +73,38 @@
       return "" + type + (thing.name ? " '" + thing.name + "'" : '') + " (" + flatjson + ")";
     }
   };
-  printRefTree = function(mirror, indentLevel, referencee, seenTree) {
-    var referencer, seen, _i, _j, _len, _len2, _ref2;
+  printRefTree = function(mirror, indentLevel, referencee, seenTree, seen) {
+    var referencer, referencers, seenThing, _i, _j, _len, _len2;
     if (indentLevel == null) {
       indentLevel = 0;
     }
     if (seenTree == null) {
       seenTree = [];
     }
+    if (seen == null) {
+      seen = {};
+    }
+    referencers = mirror.referencedBy();
+    if (referencers.length === 0) {
+      console.error("" + (makeIndent(indentLevel)) + "NATIVE CAUSE: " + (flatStringify(mirror.value_, referencee)));
+    }
     for (_i = 0, _len = seenTree.length; _i < _len; _i++) {
-      seen = seenTree[_i];
-      if (seen === mirror) {
+      seenThing = seenTree[_i];
+      if (seenThing === mirror) {
         console.error("" + (makeIndent(indentLevel)) + "cyclic");
         return;
       }
     }
+    if (seen[mirror.handle_]) {
+      console.error("" + (makeIndent(indentLevel)) + "already seen");
+      return;
+    }
+    seen[mirror.handle_] = true;
     console.error("" + (makeIndent(indentLevel)) + (flatStringify(mirror.value_, referencee)));
     seenTree.push(mirror);
-    _ref2 = mirror.referencedBy();
-    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-      referencer = _ref2[_j];
-      printRefTree(referencer, indentLevel + 1, mirror.value_, seenTree);
+    for (_j = 0, _len2 = referencers.length; _j < _len2; _j++) {
+      referencer = referencers[_j];
+      printRefTree(referencer, indentLevel + 1, mirror.value_, seenTree, seen);
     }
     return seenTree.pop();
   };
